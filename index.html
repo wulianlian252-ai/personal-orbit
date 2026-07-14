@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Personal Orbit</title>
+  <style>
+    :root {
+      --bg: #dff4ff;
+      --panel: rgba(255, 255, 255, .94);
+      --line: #d8e8f6;
+      --text: #172f4d;
+      --muted: #657b95;
+      --blue: #5aaeff;
+      --shadow: 0 14px 32px rgba(73, 138, 185, .16);
+      --font: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      color: var(--text);
+      background: radial-gradient(circle at 18% -10%, #f8fdff 0, #dff4ff 42%, #eefaff 100%);
+      overflow-x: hidden;
+    }
+    button, input, textarea, select { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    .page { width: 1212px; max-width: calc(100vw - 20px); margin: 0 auto; padding: 0 0 18px; }
+    .topbar {
+      height: 68px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 18px;
+      padding: 8px 18px;
+      margin: 0 0 8px;
+      border: 1px solid var(--line);
+      border-radius: 0 0 16px 16px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand img { width: 58px; height: 48px; object-fit: contain; flex: 0 0 auto; }
+    .brand h1 { margin: 0; font-size: 25px; line-height: 1.05; letter-spacing: 0; }
+    .brand p { margin: 6px 0 0; font-size: 15px; font-weight: 700; }
+    .spark { margin: 0 12px; color: #ffbc42; }
+    .heart { color: #ff77ad; }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .chip, .icon-btn {
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: #4d6682;
+      font-weight: 700;
+      box-shadow: 0 6px 14px rgba(75, 138, 190, .08);
+    }
+    .icon-btn { width: 46px; padding: 0; color: #17314f; }
+    .toggle { width: 44px; height: 24px; border-radius: 99px; background: #5d9cff; position: relative; }
+    .toggle:after { content: ""; position: absolute; width: 18px; height: 18px; top: 3px; right: 3px; border-radius: 50%; background: #fff; }
+    .avatar { width: 48px; height: 48px; border-radius: 50%; background: #dbefff; display: grid; place-items: center; }
+    .avatar img { width: 46px; height: 46px; object-fit: contain; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 435px) 386px;
+      gap: 12px;
+      align-items: start;
+      width: 100%;
+      min-width: 0;
+    }
+    .grid > *, .stack, .panel { min-width: 0; }
+    .stack { display: grid; gap: 10px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 16px 18px;
+    }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .title { display: flex; align-items: center; gap: 8px; }
+    .title img { width: 22px; height: 22px; object-fit: contain; }
+    h2 { margin: 0; font-size: 18px; line-height: 1.2; letter-spacing: 0; }
+    .sub { color: var(--muted); font-size: 12px; }
+    .counter {
+      height: 28px;
+      min-width: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 99px;
+      background: #fff0f5;
+      color: #ff5c86;
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    /* Today list: matched to reference image */
+    .todo-panel { height: 310px; }
+    .todo-list { display: grid; gap: 0; padding: 3px 0 8px; }
+    .todo-row {
+      height: 31px;
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr) auto 24px;
+      align-items: center;
+      gap: 8px;
+      padding: 0 2px;
+      border-radius: 8px;
+    }
+    .todo-row:hover { background: #f6fbff; }
+    .todo-row input { width: 16px; height: 16px; margin: 0; accent-color: #5d9cff; }
+    .todo-name { color: #3f536e; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .todo-row.done .todo-name { text-decoration: line-through; color: #98aabc; }
+    .todo-chip {
+      height: 20px;
+      display: inline-grid;
+      place-items: center;
+      padding: 0 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #3d8bd6;
+      background: #e7f2ff;
+    }
+    .todo-chip.重要 { background: #fff0c7; color: #e29900; }
+    .todo-chip.习惯 { background: #dff7eb; color: #2fa36d; }
+    .todo-chip.成长 { background: #e7f0ff; color: #4f8fe8; }
+    .todo-chip.财务 { background: #f1e8ff; color: #8d61dc; }
+    .todo-star { color: #a6b9cf; font-size: 18px; text-align: center; line-height: 1; }
+    .todo-add {
+      width: 100%;
+      height: 34px;
+      margin-top: 2px;
+      border-top: 1px dashed #d8e8f6;
+      background: transparent;
+      color: #4f9fff;
+      font-size: 13px;
+    }
+    .todo-add:before { content: "⊕"; margin-right: 6px; }
+
+    .capture-panel { height: 197px; position: relative; }
+    .capture-panel textarea {
+      width: 100%;
+      height: 74px;
+      resize: none;
+      border: 1px solid #d5e5f2;
+      border-radius: 10px;
+      padding: 12px 96px 12px 12px;
+      color: var(--text);
+      outline: 0;
+      background: #fff;
+    }
+    .astro { position: absolute; width: 70px; height: 56px; right: 32px; top: 66px; object-fit: contain; }
+    .char-line { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+    .char-track { height: 5px; flex: 1; border-radius: 99px; background: #e6f1fa; overflow: hidden; }
+    .char-track span { display: block; height: 100%; width: 0; background: #64baff; border-radius: inherit; }
+    .count { color: #8194aa; font-size: 11px; }
+    .capture-tags { display: flex; align-items: center; gap: 7px; margin-top: 8px; }
+    .tag {
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 9px;
+      border: 1px solid #dbeaf5;
+      border-radius: 99px;
+      background: #fff;
+      color: #56708a;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .quick {
+      margin-left: auto;
+      width: 118px;
+      height: 34px;
+      border-radius: 12px;
+      color: #fff;
+      background: linear-gradient(135deg, #6db7ff, #438bff);
+      font-weight: 900;
+      box-shadow: 0 10px 18px rgba(61, 135, 238, .22);
+    }
+    .idea-more {
+      height: 34px;
+      padding: 0 14px;
+      border: 1px solid #d5e6f5;
+      border-radius: 12px;
+      background: #f7fbff;
+      color: #438bdb;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .modules {
+      height: 140px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .module {
+      min-width: 0;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 4px;
+      background: #fff;
+      border-right: 1px solid var(--line);
+      color: var(--text);
+    }
+    .module:last-child { border-right: 0; }
+    .module img { width: 64px; height: 58px; object-fit: contain; }
+    .module b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; }
+    .module small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 12px; }
+
+    .matrix-panel { height: 344px; }
+    .matrix-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .matrix-title-row .title img { width: 20px; height: 20px; }
+    .more { color: #6d7e92; background: transparent; font-size: 12px; }
+    .matrix-wrap { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 6px; align-items: center; height: calc(100% - 42px); min-height: 0; }
+    .axis-y { writing-mode: vertical-rl; color: #73869d; font-size: 12px; text-align: center; }
+    .matrix { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; height: 100%; min-width: 0; min-height: 0; }
+    .quad { min-width: 0; min-height: 0; overflow: hidden; padding: 10px; border-radius: 8px; border: 1px solid; cursor: pointer; display: flex; flex-direction: column; transition: box-shadow .16s ease, border-color .16s ease; }
+    .quad:hover { box-shadow: 0 8px 18px rgba(74, 131, 180, .14); }
+    .q1 { background: #fff7f6; border-color: #ffd6d0; }
+    .q2 { background: #fff9eb; border-color: #ffe2a1; }
+    .q3 { background: #f2f8ff; border-color: #cfe5ff; }
+    .q4 { background: #effcf5; border-color: #cdeeda; }
+    .q-head { display: flex; justify-content: space-between; align-items: center; color: var(--text); font-size: 13px; font-weight: 900; }
+    .badge { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; color: #fff; font-size: 11px; }
+    .q1 .badge { background: #ff6b64; } .q2 .badge { background: #ffb63f; } .q3 .badge { background: #519ff4; } .q4 .badge { background: #43bd83; }
+    .quad ul { min-height: 0; overflow: hidden; margin: 8px 0 0; padding-left: 13px; font-size: 12px; color: #51677e; line-height: 1.8; }
+    .quad li { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .q-add { display: none !important; }
+    .q-more { margin-top: auto; padding-top: 4px; color: #6d7e92; font-size: 12px; font-weight: 800; }
+
+    .heat-panel { height: 210px; }
+    .heat-grid { width: 100%; max-width: 100%; min-width: 0; display: flex; gap: 8px; align-items: flex-start; overflow-x: auto; overflow-y: hidden; padding: 8px 2px 8px; margin-top: 8px; scrollbar-width: thin; }
+    .hm-label { font-size: 11px; color: #74879b; text-align: right; padding-right: 4px; }
+    .hm-cell { aspect-ratio: 1; border-radius: 4px; background: #e8eef3; }
+    .heat-day { width: 42px; flex: 0 0 42px; display: grid; justify-items: center; gap: 5px; color: #72869c; font-size: 10px; line-height: 1.1; }
+    .heat-dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(126, 151, 174, .16); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); }
+    .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 12px; margin-top: 10px; font-size: 12px; color: #71849b; }
+    .legend span:before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; background: var(--c); }
+
+    .finance-panel { height: 270px; }
+    .finance-head-icon { width: 20px; height: 20px; object-fit: contain; }
+    .ocean { position: relative; margin: 12px 0 12px; }
+    .wave { height: 40px; border-radius: 7px; background: linear-gradient(90deg, #32a9fb 0 54%, #d2ecfa 54%); overflow: hidden; }
+    .wave:before { content: ""; display: block; height: 14px; opacity: .45; background: radial-gradient(15px 8px at 14px 10px, #fff 0 60%, transparent 61%) repeat-x; background-size: 30px 14px; }
+    .whale { position: absolute; right: 18px; top: -22px; width: 90px; height: 62px; object-fit: contain; }
+    .money-line { display: flex; align-items: baseline; gap: 5px; margin-bottom: 8px; font-weight: 900; }
+    .money-line strong { font-size: 18px; }
+    .finance-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; text-align: center; border-top: 1px solid var(--line); padding-top: 12px; }
+    .finance-stats div { border-right: 1px solid var(--line); }
+    .finance-stats div:last-child { border-right: 0; }
+    .finance-stats strong { display: block; margin-top: 4px; }
+    .finance-btn { width: 100%; height: 30px; margin-top: 12px; border: 1px solid #d5e6f5; border-radius: 9px; background: #f7fbff; color: #448ee8; font-size: 12px; font-weight: 900; }
+
+    .mood-panel { height: 204px; }
+    .mood-question { width: 150px; height: 36px; margin: 0 auto 10px; display: grid; place-items: center; border: 1px solid #dce8f5; border-radius: 10px; color: #6f7f91; font-size: 12px; background: #fff; }
+    .moods { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+    .mood { display: grid; gap: 4px; place-items: center; background: transparent; color: var(--text); }
+    .face { width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; box-shadow: 0 8px 16px rgba(75, 122, 170, .12); border: 2px solid #fff; }
+    .f5 { background: #ffacbd; } .f4 { background: #ffdd78; } .f3 { background: #aee8d6; } .f2 { background: #b9dfff; } .f1 { background: #c8b8ff; }
+    .mood small { color: #61758d; font-size: 11px; }
+    .mood-save { width: 100%; height: 34px; margin-top: 10px; border-radius: 99px; color: #ff5f95; background: #fff0f5; font-weight: 900; }
+
+    .insight-panel { height: 222px; }
+    .chart { height: 124px; display: flex; align-items: end; gap: 5px; padding: 10px 2px 0; }
+    .insight-day { flex: 1; min-width: 12px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
+    .insight-mood { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; border: 1px solid rgba(85,112,140,.15); }
+    .bar { width: 100%; min-height: 6px; border-radius: 7px 7px 3px 3px; background: linear-gradient(180deg, #7fc5ff, #579bec); opacity: .88; }
+    .insight-label { color: #8194aa; font-size: 9px; line-height: 1; }
+    .analysis-btn { width: 100%; height: 30px; margin-top: 10px; border-radius: 9px; border: 1px solid #d5e6f5; background: #f7fbff; color: #448ee8; font-size: 12px; font-weight: 900; }
+
+    .pomodoro { position: fixed; z-index: 40; display: none; width: 320px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: #fff; box-shadow: 0 18px 48px rgba(61, 116, 155, .24); }
+    .pomodoro.open { display: block; }
+    .timer { margin: 10px 0 14px; color: #2d80cb; font-size: 48px; line-height: 1; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .timer-actions { display: flex; gap: 8px; }
+    .timer-actions button, .close { height: 34px; padding: 0 14px; border-radius: 10px; font-weight: 900; }
+    .start { color: #fff; background: var(--blue); } .reset, .close { border: 1px solid var(--line); background: #f7fbff; color: var(--text); }
+    .toast { position: fixed; right: 24px; bottom: 24px; display: none; padding: 12px 14px; border-radius: 10px; background: #17314f; color: #fff; box-shadow: var(--shadow); }
+    .toast.show { display: block; }
+
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: 1fr; }
+      .todo-panel, .capture-panel, .matrix-panel, .heat-panel, .finance-panel, .mood-panel, .insight-panel { height: auto; }
+      .heat-grid { grid-template-columns: 32px repeat(15, 1fr); }
+      .hm-extra { display: none; }
+    }
+  
+    /* v6 interaction recovery: keep reference UI, restore product functions */
+    [data-theme="dark"] body, body.dark { background: radial-gradient(circle at 18% -10%, #284763 0, #17293b 42%, #102132 100%); }
+    [data-theme="dark"] .panel, [data-theme="dark"] .topbar, [data-theme="dark"] .modules { background: rgba(30, 48, 68, .96); color: #eef8ff; border-color: rgba(214,232,246,.18); }
+    [data-theme="dark"] .todo-name, [data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] .brand p { color: #eef8ff; }
+    [data-theme="dark"] .chip, [data-theme="dark"] .mood-question, [data-theme="dark"] .modal-box, [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea { background: #21364d; color: #eef8ff; border-color: #45637d; }
+    .brand { cursor: pointer; border-radius: 12px; padding: 2px 8px 2px 0; }
+    .brand:hover { background: rgba(91,174,255,.08); }
+    .date-chip { position: relative; padding-right: 8px; }
+    #weatherChip { cursor: pointer; }
+    .date-picker { width: 132px; height: 30px; border: 0; background: transparent; color: inherit; font-weight: 800; outline: 0; }
+    .toggle { cursor: pointer; transition: background .18s ease; }
+    [data-theme="dark"] .toggle { background: #233b58; }
+    [data-theme="dark"] .toggle:after { right: 23px; }
+    .todo-row { grid-template-columns: 22px minmax(0,1fr) auto auto 24px; }
+    .todo-actions { display: inline-flex; gap: 4px; opacity: .92; }
+    .row-btn { height: 22px; padding: 0 7px; border: 1px solid #d8e8f6; border-radius: 7px; background: #f8fcff; color: #428bdc; font-size: 11px; font-weight: 900; }
+    .row-btn.delete { color: #ef5f7c; background: #fff7fa; }
+    .capture-tags .tag { cursor: pointer; user-select: none; }
+    .capture-tags .tag.active { background: #5aaeff; color: #fff; border-color: #5aaeff; }
+    .modal-mask { position: fixed; inset: 0; z-index: 80; display: none; place-items: center; background: rgba(31,55,76,.32); backdrop-filter: blur(5px); }
+    #taskModal, #ideaEditModal { z-index: 120; }
+    .modal-mask.open { display: grid; }
+    .modal-box { width: min(560px, calc(100vw - 32px)); background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 70px rgba(45,91,126,.28); padding: 20px; }
+    .modal-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+    .modal-head h3 { margin:0; font-size:20px; }
+    .modal-grid { display:grid; gap:10px; }
+    .modal-grid label { display:grid; gap:6px; font-size:13px; color: var(--muted); font-weight: 800; }
+    .modal-grid input, .modal-grid select, .modal-grid textarea { width:100%; min-height:42px; border:1px solid #d7e7f5; border-radius:10px; padding:9px 11px; outline:0; }
+    .modal-grid textarea { min-height:82px; resize:vertical; }
+    .modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
+    .modal-actions button, .soft-btn { height:36px; padding:0 14px; border-radius:10px; font-weight:900; }
+    .primary-action { background:#5aaeff; color:white; }
+    .ghost-action { background:#f7fbff; border:1px solid #d7e7f5; color:var(--text); }
+    .danger-action { background:#fff0f5; color:#ef5f7c; }
+    .task-detail-list { display:grid; gap:8px; max-height:260px; overflow:auto; }
+    .detail-row { display:grid; grid-template-columns: auto 1fr auto; gap:10px; align-items:center; padding:9px 10px; border:1px solid #dbeaf6; border-radius:10px; background:#f8fcff; }
+    .detail-row.no-check { grid-template-columns: 1fr auto; }
+    .detail-check { width: 22px; height: 22px; margin: 0; accent-color: #5aaeff; cursor: pointer; }
+    .detail-row b { font-size:14px; }
+    .detail-row.done b { text-decoration: line-through; color: #8194aa; }
+    .detail-meta { color:#6c7f95; font-size:12px; margin-top:3px; }
+    .detail-title { min-width: 0; overflow-wrap: anywhere; }
+
+  
+    /* v7 functional fixes */
+    .todo-panel { height: auto; min-height: 326px; }
+    .todo-list { max-height: 238px; overflow: auto; padding-right: 2px; }
+    .todo-row { grid-template-columns: 22px minmax(0,1fr) auto 24px; min-height: 31px; height: auto; padding: 4px 2px; }
+    .todo-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .todo-chip { display: none !important; }
+    .todo-actions { justify-self: end; }
+    .todo-add { position: sticky; bottom: 0; background: linear-gradient(180deg, rgba(255,255,255,.82), #fff 44%); }
+    .capture-panel { height: 228px; }
+    .capture-panel textarea { height: 96px; padding-right: 96px; }
+    .capture-tags { justify-content: flex-end; margin-top: 12px; }
+    .capture-tags .tag { display: none !important; }
+    .quick { width: auto; min-width: 126px; max-width: 100%; padding: 0 18px; white-space: nowrap; }
+    .modal-box { width: min(720px, calc(100vw - 32px)); }
+    #taskTitleInput { min-height: 78px; max-height: 220px; overflow-y: auto; resize: vertical; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+    .mood.active .face { outline: 3px solid rgba(90,174,255,.42); transform: translateY(-1px); }
+    .finance-editable { cursor: pointer; border-radius: 8px; padding: 2px 5px; }
+    .finance-editable:hover { background: #eef8ff; }
+    .finance-list { display: grid; gap: 8px; max-height: 220px; overflow: auto; }
+    .finance-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px; border: 1px solid #dbeaf6; border-radius: 10px; background: #f8fcff; }
+    .finance-row b { font-size: 15px; }
+    .finance-row small { color: #6c7f95; }
+    .mini-danger { height: 28px; padding: 0 10px; border-radius: 8px; background: #fff0f5; color: #ef5f7c; font-weight: 900; }
+    .idea-list { display: grid; gap: 10px; max-height: 430px; overflow: auto; padding-right: 2px; }
+    .idea-day { display: grid; gap: 7px; }
+    .idea-day-title { color: #62778f; font-size: 13px; font-weight: 900; }
+    .idea-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid #dbeaf6; border-radius: 10px; background: #f8fcff; }
+    .idea-text { min-width: 0; color: var(--text); line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .idea-actions { display: inline-flex; gap: 6px; }
+
+  </style>
+</head>
+<body>
+<div class="page">
+  <header class="topbar">
+    <div class="brand" id="brandEdit" title="点击编辑名称和问候语">
+      <img src="assets/logo.png" alt="" />
+      <div>
+        <h1>Personal Orbit</h1>
+        <p><span class="spark">✦</span><span id="greeting">早安，今天也是有秩序的一天。</span><span class="spark heart">❤</span></p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <div class="chip date-chip" id="weatherChip" title="天气会根据当前位置自动更新，点击可刷新"><span id="weatherIcon" aria-hidden="true">⏳</span><input class="date-picker" id="datePicker" type="date" /><span id="weatherTemp">--°C</span></div>
+      <span>☀️</span><div class="toggle" id="themeToggle" title="切换日间/暗黑模式"></div><span>🌙</span>
+      <div class="avatar"><img src="assets/avatar.png" alt="" /></div>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="stack">
+      <div class="panel todo-panel">
+        <div class="panel-head">
+          <div class="title"><img src="assets/todo.png" alt="" /><h2>今日待办</h2></div>
+          <div class="counter" id="todoCounter">0/0</div>
+        </div>
+        <div class="todo-list" id="todoList"></div>
+        <button class="todo-add" id="addTask">添加任务</button>
+      </div>
+
+      <div class="panel capture-panel">
+        <div class="panel-head">
+          <div>
+            <div class="title"><img src="assets/capsule.png" alt="" /><h2>闪念胶囊</h2></div>
+            <div class="sub">随手记下你的想法...</div>
+          </div>
+        </div>
+        <textarea id="ideaInput" maxlength="120" placeholder="随手记下你的想法..."></textarea>
+        <img class="astro" src="assets/astronaut.png" alt="" />
+        <div class="char-line"><div class="char-track"><span id="ideaMeter"></span></div><span class="count" id="ideaCount">0/120</span></div>
+        <div class="capture-tags">
+          <button class="idea-more" id="openIdeas">更多想法</button>
+          <button class="quick" id="saveIdea">➤ 保存想法</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="stack">
+      <div class="modules">
+        <button class="module"><img src="assets/mind.png" alt="" /><b>Mind</b><small>灵感 · 情绪 · 成长</small></button>
+        <button class="module"><img src="assets/action.png" alt="" /><b>Action</b><small>任务 · 计划 · 复盘</small></button>
+        <button class="module"><img src="assets/finance.png" alt="" /><b>Finance</b><small>预算 · 记录 · 目标</small></button>
+      </div>
+      <div class="panel matrix-panel">
+        <div class="matrix-title-row">
+          <div class="title"><img src="assets/action.png" alt="" /><h2>艾森豪威尔四象限（今日任务）</h2></div>
+          <button class="more">更多视图 ›</button>
+        </div>
+        <div class="matrix-wrap">
+          <div class="axis-y">重要</div>
+          <div class="matrix" id="matrix"></div>
+        </div>
+      </div>
+      <div class="panel heat-panel">
+        <div class="title"><img src="assets/heat.png" alt="" /><h2>情绪热力图（过去 30 天）</h2></div>
+        <div class="heat-grid" id="heatGrid"></div>
+        <div class="legend"><span style="--c:#ffacbd">超棒</span><span style="--c:#ffdd78">开心</span><span style="--c:#aee8d6">平静</span><span style="--c:#b9dfff">有点累</span><span style="--c:#c8b8ff">低落</span><span style="--c:#e8eef3">未记录</span></div>
+      </div>
+    </section>
+
+    <section class="stack">
+      <div class="panel finance-panel">
+        <div class="panel-head">
+          <div>
+            <div class="title"><img class="finance-head-icon" src="assets/wallet-small.png" alt="" /><h2>财务水位线</h2></div>
+            <div class="sub">本月预算使用情况</div>
+          </div>
+          <div class="sub" id="budgetPeriod">周期：--</div>
+        </div>
+        <div class="money-line"><strong id="spent" data-finance-records title="点击查看支出明细">¥ 6,480</strong><span class="sub">/ ¥ 12,000</span><span style="margin-left:auto;color:#59708a">54%</span></div>
+        <div class="ocean"><div class="wave"></div><img class="whale" src="assets/whale.png" alt="" /></div>
+        <div class="finance-stats"><div><span class="sub">可用余额</span><strong id="remainMoney" style="color:#35a76f">¥ 5,520</strong></div><div><span class="sub">日均支出</span><strong id="dailyMoney">¥ 324</strong></div></div>
+        <button class="finance-btn" id="financeDetailBtn">添加支出</button>
+      </div>
+      <div class="panel mood-panel">
+        <div class="panel-head">
+          <div class="title"><img src="assets/heart.png" alt="" /><h2>情绪气泡</h2></div>
+          <button class="more" id="moodHistoryBtn">记录历史 ›</button>
+        </div>
+        <div class="mood-question">此刻心情如何呢？</div>
+        <div class="moods" id="moods"></div>
+        <button class="mood-save" id="saveMood">✎ 记录心情</button>
+      </div>
+      <div class="panel insight-panel">
+        <div class="panel-head">
+          <div class="title"><img src="assets/sparkle.png" alt="" /><h2>情绪 · 消费洞察</h2></div>
+          <div class="sub">本月趋势⌄</div>
+        </div>
+        <div class="chart" id="chart"></div>
+        <button class="analysis-btn">查看完整分析</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+
+<section class="modal-mask" id="taskModal" aria-hidden="true">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="taskModalTitle">添加任务</h3><button class="ghost-action soft-btn" data-close-modal="taskModal">×</button></div>
+    <div class="modal-grid">
+      <label>任务名称<textarea id="taskTitleInput" placeholder="例如：整理本周财务记录。内容很长时会自动换行，并可滚动查看完整输入。"></textarea></label>
+      <label>标签<select id="taskTagInput"><option>重要</option><option>习惯</option><option>成长</option><option>财务</option><option>灵感</option><option>待办</option></select></label>
+      <label>象限<select id="taskQuadrantInput"><option value="q1">重要且紧急</option><option value="q2">重要不紧急</option><option value="q3">紧急不重要</option><option value="q4">不重要不紧急</option></select></label>
+    </div>
+    <div class="modal-actions"><button class="danger-action" id="deleteTaskFromModal">删除</button><button class="ghost-action" data-close-modal="taskModal">取消</button><button class="primary-action" id="saveTaskFromModal">保存任务</button></div>
+  </div>
+</section>
+<section class="modal-mask" id="allTasksModal" aria-hidden="true">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="allTasksTitle">全部任务</h3><button class="ghost-action soft-btn" data-close-modal="allTasksModal">×</button></div>
+    <div class="task-detail-list" id="allTasksList"></div>
+  </div>
+</section>
+<section class="modal-mask" id="ideasModal" aria-hidden="true">
+  <div class="modal-box">
+    <div class="modal-head"><h3>想法锦集</h3><button class="ghost-action soft-btn" data-close-modal="ideasModal">×</button></div>
+    <div class="idea-list" id="ideaList"></div>
+  </div>
+</section>
+<section class="modal-mask" id="ideaEditModal" aria-hidden="true">
+  <div class="modal-box">
+    <div class="modal-head"><h3>编辑想法</h3><button class="ghost-action soft-btn" data-close-modal="ideaEditModal">×</button></div>
+    <div class="modal-grid">
+      <label>想法内容<textarea id="ideaEditInput" maxlength="280" placeholder="修改你的念头..."></textarea></label>
+    </div>
+    <div class="modal-actions"><button class="ghost-action" data-close-modal="ideaEditModal">取消</button><button class="primary-action" id="saveIdeaEdit">保存想法</button></div>
+  </div>
+</section>
+<section class="modal-mask" id="brandModal" aria-hidden="true">
+  <div class="modal-box">
+    <div class="modal-head"><h3>页面设置</h3><button class="ghost-action soft-btn" data-close-modal="brandModal">×</button></div>
+    <div class="modal-grid">
+      <label>个人名称<input id="brandNameInput" /></label>
+      <label>问候语<input id="greetingInput" /></label>
+    </div>
+    <div class="modal-actions"><button class="ghost-action" data-close-modal="brandModal">取消</button><button class="primary-action" id="saveBrandSettings">保存设置</button></div>
+  </div>
+</section>
+
+
+<section class="modal-mask" id="moodHistoryModal" aria-hidden="true">
+  <div class="modal-box">
+    <div class="modal-head"><h3>心情记录历史</h3><button class="ghost-action soft-btn" data-close-modal="moodHistoryModal">×</button></div>
+    <div class="task-detail-list" id="moodHistoryList"></div>
+  </div>
+</section>
+<section class="modal-mask" id="financeModal" aria-hidden="true">
+  <div class="modal-box">
+    <div class="modal-head"><h3>添加支出</h3><button class="ghost-action soft-btn" data-close-modal="financeModal">×</button></div>
+    <div class="modal-grid">
+      <label>月度预算<input id="financeBudgetInput" type="number" min="0" step="100" /></label>
+      <label>金额<input id="financeAmountInput" type="number" min="0" step="0.01" placeholder="输入金额" /></label>
+      <label>分类<select id="financeCategoryInput"><option>餐饮</option><option>交通</option><option>娱乐</option><option>固定</option><option>其他</option></select></label>
+      <label>日期<input id="financeDateInput" type="date" /></label>
+      <label>备注<input id="financeNoteInput" placeholder="可不填" /></label>
+    </div>
+    <div class="modal-actions"><button class="ghost-action" data-close-modal="financeModal">取消</button><button class="primary-action" id="addFinanceRecord">添加支出</button></div>
+  </div>
+</section>
+<section class="modal-mask" id="expenseDetailsModal" aria-hidden="true">
+  <div class="modal-box">
+    <div class="modal-head"><h3>支出明细</h3><button class="ghost-action soft-btn" data-close-modal="expenseDetailsModal">×</button></div>
+    <div class="finance-list" id="financeRecordList"></div>
+  </div>
+</section>
+
+<aside class="pomodoro" id="pomodoro">
+  <div class="panel-head"><h2>番茄专注时钟</h2><button class="close" id="closeTimer">×</button></div>
+  <div class="sub" id="timerTask">未选择任务</div>
+  <div class="timer" id="timerDisplay">25:00</div>
+  <div class="timer-actions"><button class="start" id="startTimer">开始</button><button class="reset" id="resetTimer">重置</button></div>
+</aside>
+<div class="toast" id="toast"></div>
+
+<script>
+
+const STORE = "personal-orbit-reference-ui-v3";
+const LEGACY = ["personal-orbit-reference-ui-v2", "personal-orbit-reference-ui-v1"];
+const $ = id => document.getElementById(id);
+const localDateKey = date => {
+  const d = date || new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+const todayKey = () => localDateKey(new Date());
+const uid = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+const seed = {
+  brandName: "Personal Orbit",
+  greetingText: "今天也是有秩序的一天。",
+  language: "zh-CN",
+  theme: "light",
+  selectedDate: todayKey(),
+  selectedMood: "平静",
+  tasks: [
+    { id: uid(), title: "完成项目需求文档", tag: "重要", done: true, q: "q1", tomatoes: 0 },
+    { id: uid(), title: "30 分钟晨间阅读", tag: "习惯", done: true, q: "q1", tomatoes: 0 },
+    { id: uid(), title: "健身 30 分钟", tag: "习惯", done: false, q: "q4", tomatoes: 0 },
+    { id: uid(), title: "回复邮件与消息", tag: "重要", done: false, q: "q3", tomatoes: 0 },
+    { id: uid(), title: "学习 AI 相关课程（1 节）", tag: "成长", done: false, q: "q2", tomatoes: 0 },
+    { id: uid(), title: "整理本周财务记录", tag: "财务", done: false, q: "q2", tomatoes: 0 },
+    { id: uid(), title: "睡前 10 分钟复盘", tag: "习惯", done: false, q: "q4", tomatoes: 0 }
+  ],
+  ideas: [],
+  moods: {},
+  finance: {
+    budget: 12000,
+    records: [
+      { id: uid(), type: "expense", amount: 324, category: "餐饮", note: "午餐", date: todayKey() },
+      { id: uid(), type: "expense", amount: 120, category: "交通", note: "地铁", date: todayKey() }
+    ]
+  }
+};
+let state = loadState();
+let editingTaskId = null;
+let editingIdeaId = null;
+let activeTaskListQuadrant = null;
+let timer = { taskId: null, seconds: 1500, running: false, interval: null };
+function cloneSeed(){ return JSON.parse(JSON.stringify(seed)); }
+function loadState(){
+  for (const key of [STORE, ...LEGACY]) {
+    try { const raw = localStorage.getItem(key); if (raw) return normalizeState(JSON.parse(raw)); } catch {}
+  }
+  return cloneSeed();
+}
+function normalizeState(s){
+  const base = cloneSeed();
+  const merged = {...base, ...s};
+  merged.tasks = (merged.tasks || []).map(t => ({ id: t.id || t.task_id || uid(), title: t.title || "未命名任务", tag: t.tag || "重要", done: !!t.done, q: t.q || t.quadrant || "q2", tomatoes: t.tomatoes || t.tomato_count || 0 }));
+  merged.ideas = (merged.ideas || []).map(i => ({
+    id: i.id || i.idea_id || uid(),
+    text: i.text || i.content || "",
+    created_at: i.created_at || new Date().toISOString(),
+    updated_at: i.updated_at || ""
+  })).filter(i => i.text.trim());
+  merged.moods = merged.moods || {};
+  merged.selectedDate = merged.selectedDate || todayKey();
+  merged.selectedMood = merged.selectedMood || "平静";
+  merged.language = "zh-CN";
+  merged.finance = merged.finance || base.finance;
+  merged.finance.budget = Number(merged.finance.budget || base.finance.budget);
+  merged.finance.records = (merged.finance.records || [])
+    .filter(r => (r.type || r.flow_type || "expense") === "expense")
+    .map(r => ({ id: r.id || r.record_id || uid(), type: "expense", amount: Number(r.amount || 0), category: r.category || "其他", note: r.note || r.notes || "", date: r.date || todayKey() }));
+  return merged;
+}
+function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
+function esc(s){ return String(s).replace(/[&<>"']/g, m => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" }[m])); }
+function money(n){ return "¥ " + Number(n || 0).toLocaleString("zh-CN", { maximumFractionDigits: 0 }); }
+function toast(s){ const t=$("toast"); t.textContent=s; t.classList.add("show"); clearTimeout(t.t); t.t=setTimeout(()=>t.classList.remove("show"),1800); }
+function openModal(id){ $(id).classList.add("open"); $(id).setAttribute("aria-hidden", "false"); }
+function closeModal(id){ $(id).classList.remove("open"); $(id).setAttribute("aria-hidden", "true"); }
+function autoGrow(el){ if(!el) return; el.style.height = "auto"; el.style.height = Math.min(el.scrollHeight, 220) + "px"; }
+function renderHeader(){
+  document.documentElement.dataset.theme = state.theme || "light";
+  document.querySelector(".brand h1").textContent = state.brandName || "Personal Orbit";
+  const h = new Date().getHours();
+  const prefix = state.language === "en-US" ? (h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening") : (h < 11 ? "早安" : h < 18 ? "午安" : "晚安");
+  $("greeting").textContent = state.language === "en-US" ? `${prefix}, ${state.greetingText || "keep your orbit clear."}` : `${prefix}，${state.greetingText || "今天也是有秩序的一天。"}`;
+  $("datePicker").value = state.selectedDate || todayKey();
+}
+function showWeather(weather){
+  if(!weather) return;
+  const weatherCodes = {
+    0:["☀️","晴"],1:["🌤️","大致晴朗"],2:["⛅","多云"],3:["☁️","阴"],45:["🌫️","有雾"],48:["🌫️","雾凇"],
+    51:["🌦️","小毛毛雨"],53:["🌦️","毛毛雨"],55:["🌧️","强毛毛雨"],56:["🌧️","冻毛毛雨"],57:["🌧️","强冻毛毛雨"],
+    61:["🌦️","小雨"],63:["🌧️","中雨"],65:["🌧️","大雨"],66:["🌧️","冻雨"],67:["🌧️","强冻雨"],
+    71:["🌨️","小雪"],73:["🌨️","中雪"],75:["❄️","大雪"],77:["🌨️","米雪"],80:["🌦️","小阵雨"],
+    81:["🌧️","阵雨"],82:["⛈️","强阵雨"],85:["🌨️","小阵雪"],86:["❄️","强阵雪"],95:["⛈️","雷暴"],
+    96:["⛈️","雷暴伴小冰雹"],99:["⛈️","雷暴伴强冰雹"]
+  };
+  const [icon, label] = weatherCodes[weather.code] || ["🌡️", "当前天气"];
+  $("weatherIcon").textContent = icon;
+  $("weatherTemp").textContent = `${Math.round(weather.temperature)}°C`;
+  $("weatherChip").title = `${label} · ${Math.round(weather.temperature)}°C · 点击刷新`;
+}
+function updateWeather(){
+  const chip = $("weatherChip");
+  $("weatherIcon").textContent = "⏳";
+  chip.title = "正在获取当前位置天气…";
+  if(!navigator.geolocation){
+    $("weatherIcon").textContent = "📍";
+    $("weatherTemp").textContent = "需定位";
+    chip.title = "当前浏览器不支持位置服务";
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(async position => {
+    try {
+      const { latitude, longitude } = position.coords;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&timezone=auto`;
+      const response = await fetch(url);
+      if(!response.ok) throw new Error("weather request failed");
+      const data = await response.json();
+      const weather = { temperature: data.current.temperature_2m, code: data.current.weather_code, updatedAt: Date.now() };
+      state.weather = weather;
+      save();
+      showWeather(weather);
+    } catch {
+      if(state.weather) showWeather(state.weather);
+      else {
+        $("weatherIcon").textContent = "⚠️";
+        $("weatherTemp").textContent = "更新失败";
+        chip.title = "天气更新失败，点击重试";
+      }
+    }
+  }, () => {
+    if(state.weather) showWeather(state.weather);
+    else {
+      $("weatherIcon").textContent = "📍";
+      $("weatherTemp").textContent = "需定位";
+      chip.title = "请允许位置权限后点击重试";
+    }
+  }, { enableHighAccuracy:false, timeout:10000, maximumAge:15 * 60 * 1000 });
+}
+function renderTodos(){
+  const done = state.tasks.filter(t => t.done).length;
+  $("todoCounter").textContent = done + "/" + state.tasks.length;
+  $("todoList").innerHTML = state.tasks.slice(0,9).map(t => `
+    <article class="todo-row ${t.done ? "done" : ""}" draggable="true" data-task="${t.id}">
+      <input type="checkbox" ${t.done ? "checked" : ""} data-toggle="${t.id}" />
+      <div class="todo-name" data-detail-task="${t.id}" title="双击查看详情">${esc(t.title)}</div>
+      <span class="todo-actions"><button class="row-btn" data-edit-task="${t.id}">编辑</button><button class="row-btn delete" data-delete-task="${t.id}">删除</button></span>
+      <span class="todo-star" data-detail-task="${t.id}">☆</span>
+    </article>`).join("");
+}
+const quadrantDefs = [
+  ["q1", "重要且紧急", "q1"],
+  ["q2", "重要不紧急", "q2"],
+  ["q3", "紧急不重要", "q3"],
+  ["q4", "不重要不紧急", "q4"]
+];
+const moodMeta = {
+  excellent: { label: "超棒", color: "#ffacbd", face: "*_*", cls: "f5" },
+  happy: { label: "开心", color: "#ffdd78", face: ":)", cls: "f4" },
+  calm: { label: "平静", color: "#aee8d6", face: "^_^", cls: "f3" },
+  low: { label: "有点累", color: "#b9dfff", face: ":|", cls: "f2" },
+  sad: { label: "低落", color: "#c8b8ff", face: "-_-", cls: "f1" }
+};
+const moodAlias = { "超棒": "excellent", "开心": "happy", "平静": "calm", "有点累": "low", "低落": "sad" };
+function moodKey(value){ return moodMeta[value] ? value : (moodAlias[value] || "calm"); }
+function moodLabel(value){ return moodMeta[moodKey(value)]?.label || "平静"; }
+function formatDateLabel(dateKey){
+  const d = new Date(dateKey + "T00:00:00");
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+function dateKeyOffset(daysBack){
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - daysBack);
+  return localDateKey(d);
+}
+function renderMatrix(){
+  $("matrix").innerHTML = quadrantDefs.map(([id,name,cls]) => {
+    const allItems = state.tasks.filter(t => t.q === id);
+    const preview = allItems.slice(0,2);
+    const overflow = Math.max(0, allItems.length - preview.length);
+    return `<section class="quad ${cls}" data-open-q="${id}" title="点击查看${name}全部事项">
+      <div class="q-head"><span>${name}</span><span class="badge">${allItems.length}</span></div>
+      <ul>${preview.length ? preview.map(t=>`<li title="${esc(t.title)}">${esc(t.title)}</li>`).join("") : '<li>暂无任务</li>'}</ul>
+      ${overflow ? `<div class="q-more">还有 ${overflow} 项</div>` : ""}
+    </section>`;
+  }).join("");
+}
+function renderHeat(){
+  const empty = "#e8eef3";
+  const days = Array.from({ length: 30 }, (_, i) => dateKeyOffset(29 - i));
+  $("heatGrid").innerHTML = days.map(date => {
+    const record = state.moods?.[date];
+    const key = record ? moodKey(record.mood) : null;
+    const label = formatDateLabel(date);
+    const text = record ? `情绪：${moodMeta[key].label}` : "未记录";
+    const color = key ? moodMeta[key].color : empty;
+    return `<span class="heat-day" title="${label}\n${text}">
+      <span>${label}</span>
+      <span class="heat-dot" style="background:${color}"></span>
+    </span>`;
+  }).join("");
+}
+function renderMoods(){
+  $("moods").innerHTML = Object.entries(moodMeta).map(([key,m]) => `<button class="mood ${moodKey(state.selectedMood) === key ? "active" : ""}" data-mood="${key}"><span class="face ${m.cls}">${m.face}</span><small>${m.label}</small></button>`).join("");
+}
+function financeSummary(){
+  const month = (state.selectedDate || todayKey()).slice(0,7);
+  const monthRecords = state.finance.records.filter(r => r.date.slice(0,7) === month);
+  const expense = monthRecords.filter(r=>r.type==="expense").reduce((s,r)=>s+r.amount,0);
+  const selected = new Date((state.selectedDate || todayKey()) + "T00:00:00");
+  const day = Math.max(1, selected.getDate());
+  const lastDay = new Date(selected.getFullYear(), selected.getMonth() + 1, 0).getDate();
+  const period = `${selected.getMonth() + 1}.1 - ${selected.getMonth() + 1}.${lastDay}`;
+  return { month, expense, remain: state.finance.budget - expense, daily: expense / day, ratio: state.finance.budget ? Math.round(expense / state.finance.budget * 100) : 0, period };
+}
+function renderFinance(){
+  const s = financeSummary();
+  $("spent").textContent = money(s.expense);
+  document.querySelector(".money-line .sub").textContent = "/ " + money(state.finance.budget);
+  document.querySelector(".money-line span:last-child").textContent = s.ratio + "%";
+  document.querySelector(".wave").style.background = `linear-gradient(90deg, #32a9fb 0 ${Math.min(100,s.ratio)}%, #d2ecfa ${Math.min(100,s.ratio)}%)`;
+  $("remainMoney").textContent = money(Math.max(0, s.remain));
+  $("dailyMoney").textContent = money(s.daily);
+  $("budgetPeriod").textContent = "周期：" + s.period;
+}
+function renderChart(){
+  const end = new Date(todayKey() + "T00:00:00");
+  const dates = Array.from({length:14}, (_, i) => {
+    const date = new Date(end);
+    date.setDate(end.getDate() - (13 - i));
+    return localDateKey(date);
+  });
+  const points = dates.map(date => ({
+    date,
+    expense: state.finance.records
+      .filter(r => r.type === "expense" && r.date === date)
+      .reduce((sum, r) => sum + r.amount, 0),
+    mood: state.moods?.[date] ? moodKey(state.moods[date].mood) : null
+  }));
+  const max = Math.max(100, ...points.map(point => point.expense));
+  $("chart").innerHTML = points.map(point => {
+    const mood = point.mood ? moodMeta[point.mood] : null;
+    const moodText = mood ? mood.label : "未记录情绪";
+    const label = new Date(point.date + "T00:00:00").getDate();
+    return `<span class="insight-day" title="${formatDateLabel(point.date)}\n${moodText}\n消费：${money(point.expense)}">
+      <span class="insight-mood" style="background:${mood ? mood.color : "#e8eef3"}"></span>
+      <span class="bar" style="height:${Math.max(6, point.expense / max * 86)}px"></span>
+      <span class="insight-label">${label}</span>
+    </span>`;
+  }).join("");
+}
+function updateIdea(){
+  const len = $("ideaInput").value.length;
+  $("ideaCount").textContent = len + "/120";
+  $("ideaMeter").style.width = Math.min(100, len / 120 * 100) + "%";
+}
+function ideaDateKey(idea){
+  return (idea.created_at || new Date().toISOString()).slice(0,10);
+}
+function renderIdeas(){
+  const sorted = state.ideas.slice().sort((a,b)=>(b.created_at || "").localeCompare(a.created_at || ""));
+  if(!sorted.length){
+    $("ideaList").innerHTML = '<div class="detail-row no-check"><div><b>暂无想法</b><div class="detail-meta">在闪念胶囊里保存后，会按日期记录在这里。</div></div></div>';
+    return;
+  }
+  const groups = new Map();
+  sorted.forEach(idea => {
+    const key = ideaDateKey(idea);
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(idea);
+  });
+  $("ideaList").innerHTML = Array.from(groups.entries()).map(([date, ideas]) => `
+    <section class="idea-day">
+      <div class="idea-day-title">${formatDateLabel(date)} · ${ideas.length} 条</div>
+      ${ideas.map(idea => `<article class="idea-row">
+        <div class="idea-text">${esc(idea.text)}</div>
+        <div class="idea-actions"><button class="row-btn" data-edit-idea="${idea.id}">编辑</button><button class="row-btn delete" data-delete-idea="${idea.id}">删除</button></div>
+      </article>`).join("")}
+    </section>
+  `).join("");
+}
+function openIdeasModal(){ renderIdeas(); openModal("ideasModal"); }
+function openIdeaEdit(id){
+  const idea = state.ideas.find(i => i.id === id);
+  if(!idea) return toast("这条想法不存在。");
+  editingIdeaId = id;
+  $("ideaEditInput").value = idea.text;
+  openModal("ideaEditModal");
+  setTimeout(() => { $("ideaEditInput").focus(); autoGrow($("ideaEditInput")); }, 30);
+}
+function saveIdeaEdit(){
+  const text = $("ideaEditInput").value.trim();
+  if(!text) return toast("想法内容不能为空。");
+  const idea = state.ideas.find(i => i.id === editingIdeaId);
+  if(idea){ idea.text = text; idea.updated_at = new Date().toISOString(); }
+  save(); closeModal("ideaEditModal"); renderIdeas(); toast("想法已保存。");
+}
+function deleteIdea(id){
+  state.ideas = state.ideas.filter(i => i.id !== id);
+  save(); renderIdeas(); toast("想法已删除。");
+}
+function render(){ renderHeader(); renderTodos(); renderMatrix(); renderHeat(); renderMoods(); renderFinance(); renderChart(); updateIdea(); }
+function openTaskModal(q="q2", id=null){
+  editingTaskId = id;
+  const task = id ? state.tasks.find(t => t.id === id) : null;
+  $("taskModalTitle").textContent = task ? "编辑任务" : "添加任务";
+  $("taskTitleInput").value = task?.title || "";
+  $("taskTagInput").value = task?.tag || "重要";
+  $("taskQuadrantInput").value = task?.q || q;
+  $("deleteTaskFromModal").style.display = task ? "inline-flex" : "none";
+  openModal("taskModal");
+  setTimeout(() => { $("taskTitleInput").focus(); autoGrow($("taskTitleInput")); }, 30);
+}
+function saveTaskModal(){
+  const title = $("taskTitleInput").value.trim();
+  if(!title) return toast("请输入任务名称。")
+  if(editingTaskId){ const task = state.tasks.find(t => t.id === editingTaskId); if(task){ task.title = title; task.tag = $("taskTagInput").value; task.q = $("taskQuadrantInput").value; } }
+  else { state.tasks.push({ id: uid(), title, tag: $("taskTagInput").value, done: false, q: $("taskQuadrantInput").value, tomatoes: 0 }); }
+  save(); closeModal("taskModal"); render(); refreshTaskListModal(); toast("任务已保存。");
+}
+function deleteTask(id){
+  state.tasks = state.tasks.filter(t => t.id !== id);
+  if(editingTaskId === id) closeModal("taskModal");
+  save();
+  render();
+  refreshTaskListModal();
+  toast("任务已删除。");
+}
+function refreshTaskListModal(){
+  if($("allTasksModal").classList.contains("open")) renderAllTasks(activeTaskListQuadrant);
+}
+function renderAllTasks(q = null){
+  activeTaskListQuadrant = q;
+  const def = quadrantDefs.find(d => d[0] === q);
+  const tasks = q ? state.tasks.filter(t => t.q === q) : state.tasks;
+  $("allTasksTitle").textContent = def ? `${def[1]} · ${tasks.length} 项` : `全部任务 · ${tasks.length} 项`;
+  $("allTasksList").innerHTML = tasks.length ? tasks.map(t => {
+    const qName = quadrantDefs.find(d => d[0] === t.q)?.[1] || t.q;
+    return `<div class="detail-row ${t.done ? "done" : ""}">
+      <input class="detail-check" type="checkbox" ${t.done ? "checked" : ""} data-toggle="${t.id}" title="标记完成" />
+      <div class="detail-title"><b>${esc(t.title)}</b><div class="detail-meta">${esc(t.tag)} · ${esc(qName)} · 番茄 ${t.tomatoes || 0}</div></div>
+      <div><button class="row-btn" data-edit-task="${t.id}">编辑</button> <button class="row-btn delete" data-delete-task="${t.id}">删除</button></div>
+    </div>`;
+  }).join("") : '<div class="detail-row no-check"><div><b>暂无任务</b><div class="detail-meta">这个象限目前没有事项。</div></div></div>';
+  openModal("allTasksModal");
+}
+function openBrandModal(){ $("brandNameInput").value = state.brandName || "Personal Orbit"; $("greetingInput").value = state.greetingText || "今天也是有秩序的一天。"; openModal("brandModal"); }
+function saveBrand(){ state.brandName = $("brandNameInput").value.trim() || "Personal Orbit"; state.greetingText = $("greetingInput").value.trim() || "今天也是有秩序的一天。"; state.language = "zh-CN"; save(); closeModal("brandModal"); render(); toast("页面设置已保存。"); }
+function openMoodHistory(){
+  const entries = Object.entries(state.moods).sort((a,b)=>b[0].localeCompare(a[0]));
+  $("moodHistoryList").innerHTML = entries.length ? entries.map(([date,m]) => `<div class="detail-row no-check"><div><b>${formatDateLabel(date)} · ${esc(moodLabel(m.mood))}</b><div class="detail-meta">${esc(m.note || "无备注")}</div></div><button class="row-btn delete" data-delete-mood="${esc(date)}">删除</button></div>`).join("") : '<div class="detail-row no-check"><div><b>暂无心情记录</b><div class="detail-meta">选择心情后点击记录心情即可保存。</div></div></div>';
+  openModal("moodHistoryModal");
+}
+function openFinanceModal(){
+  $("financeBudgetInput").value = state.finance.budget;
+  $("financeDateInput").value = state.selectedDate || todayKey();
+  openModal("financeModal");
+}
+function openExpenseDetails(){
+  renderFinanceRecords();
+  openModal("expenseDetailsModal");
+}
+function renderFinanceRecords(){
+  const expenses = state.finance.records.filter(r => r.type === "expense").slice().sort((a,b)=>b.date.localeCompare(a.date));
+  $("financeRecordList").innerHTML = expenses.map(r => `<div class="finance-row"><div><b>-${money(r.amount)}</b><br><small>${esc(r.date)} · ${esc(r.category)} · ${esc(r.note || "无备注")}</small></div><button class="mini-danger" data-delete-finance="${r.id}">删除</button></div>`).join("") || '<div class="finance-row"><div><b>暂无支出</b><br><small>添加支出后会显示在这里。</small></div></div>';
+}
+function addFinanceRecord(){
+  const amount = Number($("financeAmountInput").value);
+  if(!amount) return toast("请输入金额。");
+  state.finance.budget = Number($("financeBudgetInput").value || state.finance.budget || 0);
+  state.finance.records.unshift({ id: uid(), type: "expense", amount, category: $("financeCategoryInput").value, note: $("financeNoteInput").value.trim(), date: $("financeDateInput").value || state.selectedDate || todayKey() });
+  $("financeAmountInput").value = ""; $("financeNoteInput").value = "";
+  save(); render(); closeModal("financeModal"); toast("支出已添加。");
+}
+document.addEventListener("click", e => {
+  const el = e.target.closest("button,input,[data-detail-task],[data-open-q],[data-finance-records],.brand,.toggle");
+  if(!el) return;
+  if(el.dataset.closeModal) return closeModal(el.dataset.closeModal);
+  if(el.dataset.toggle){
+    const task = state.tasks.find(t => t.id === el.dataset.toggle);
+    if(task){ task.done = el.checked; save(); render(); refreshTaskListModal(); }
+    return;
+  }
+  if(el.dataset.openQ) return renderAllTasks(el.dataset.openQ);
+  if(el.dataset.addQ) return openTaskModal(el.dataset.addQ);
+  if(el.id === "addTask") return openTaskModal("q1");
+  if(el.dataset.editTask) return openTaskModal("q2", el.dataset.editTask);
+  if(el.dataset.deleteTask) return deleteTask(el.dataset.deleteTask);
+  if(el.id === "openIdeas") return openIdeasModal();
+  if(el.dataset.editIdea) return openIdeaEdit(el.dataset.editIdea);
+  if(el.dataset.deleteIdea) return deleteIdea(el.dataset.deleteIdea);
+  if(el.id === "brandEdit" || el.closest?.("#brandEdit")) return openBrandModal();
+  if(el.id === "themeToggle"){ state.theme = state.theme === "dark" ? "light" : "dark"; save(); renderHeader(); return; }
+  if(el.dataset.mood){ state.selectedMood = el.dataset.mood; save(); renderMoods(); return; }
+  if(el.id === "moodHistoryBtn") return openMoodHistory();
+  if(el.dataset.deleteMood){ delete state.moods[el.dataset.deleteMood]; save(); render(); openMoodHistory(); toast("心情记录已删除。"); return; }
+  if(el.id === "financeDetailBtn") return openFinanceModal();
+  if(el.dataset.financeRecords !== undefined) return openExpenseDetails();
+  if(el.dataset.deleteFinance){ state.finance.records = state.finance.records.filter(r => r.id !== el.dataset.deleteFinance); save(); render(); renderFinanceRecords(); toast("流水已删除。"); }
+});
+document.addEventListener("dblclick", e => { const detail = e.target.closest("[data-detail-task]"); if(detail) renderAllTasks(); });
+$("weatherChip").addEventListener("click", e => { if(e.target.id !== "datePicker") updateWeather(); });
+$("datePicker").addEventListener("change", e => { state.selectedDate = e.target.value || todayKey(); save(); render(); });
+$("saveTaskFromModal").onclick = saveTaskModal;
+$("deleteTaskFromModal").onclick = () => { if(editingTaskId) deleteTask(editingTaskId); };
+$("taskTitleInput").addEventListener("input", e => autoGrow(e.target));
+$("saveBrandSettings").onclick = saveBrand;
+$("ideaInput").addEventListener("input", updateIdea);
+$("ideaEditInput").addEventListener("input", e => autoGrow(e.target));
+$("saveIdeaEdit").onclick = saveIdeaEdit;
+$("saveIdea").onclick = () => {
+  const text = $("ideaInput").value.trim();
+  if(!text) return toast("先写一点内容吧。");
+  state.ideas.unshift({ id: uid(), text, created_at: new Date().toISOString() });
+  $("ideaInput").value = "";
+  save(); render(); toast("想法已记录到锦集。");
+};
+$("saveMood").onclick = () => { state.moods[state.selectedDate || todayKey()] = { mood: moodKey(state.selectedMood), note: "", created_at: new Date().toISOString() }; save(); render(); toast("今日心情已记录。"); };
+$("addFinanceRecord").onclick = addFinanceRecord;
+$("financeBudgetInput").addEventListener("change", () => { state.finance.budget = Number($("financeBudgetInput").value || state.finance.budget || 0); save(); render(); });
+$("closeTimer").onclick = () => $("pomodoro").classList.remove("open");
+$("resetTimer").onclick = () => { timer.seconds = 1500; updateTimer(); };
+$("startTimer").onclick = () => { if(timer.running) return; timer.running = true; timer.interval = setInterval(() => { timer.seconds--; updateTimer(); if(timer.seconds <= 0){ clearInterval(timer.interval); timer.running=false; toast("专注完成。"); } }, 1000); };
+function updateTimer(){ $("timerDisplay").textContent = String(Math.floor(timer.seconds/60)).padStart(2,"0") + ":" + String(timer.seconds%60).padStart(2,"0"); }
+render();
+if(state.weather) showWeather(state.weather);
+updateWeather();
+
+</script>
+</body>
+</html>
