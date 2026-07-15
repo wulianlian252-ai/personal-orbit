@@ -572,7 +572,7 @@
       <label>标签<select id="taskTagInput"><option>重要</option><option>习惯</option><option>成长</option><option>财务</option><option>灵感</option><option>待办</option></select></label>
       <label>象限<select id="taskQuadrantInput"><option value="q1">重要且紧急</option><option value="q2">重要不紧急</option><option value="q3">紧急不重要</option><option value="q4">不重要不紧急</option></select></label>
     </div>
-    <div class="modal-actions"><button class="danger-action" id="deleteTaskFromModal">删除</button><button class="ghost-action" data-close-modal="taskModal">取消</button><button class="primary-action" id="saveTaskFromModal">保存任务</button></div>
+    <div class="modal-actions"><button class="ghost-action" data-close-modal="taskModal">取消</button><button class="primary-action" id="saveTaskFromModal">保存任务</button></div>
   </div>
 </section>
 <section class="modal-mask" id="allTasksModal" aria-hidden="true">
@@ -966,7 +966,6 @@ function openTaskModal(q="q2", id=null){
   $("taskTitleInput").value = task?.title || "";
   $("taskTagInput").value = task?.tag || "重要";
   $("taskQuadrantInput").value = task?.q || q;
-  $("deleteTaskFromModal").style.display = task ? "inline-flex" : "none";
   openModal("taskModal");
   setTimeout(() => { $("taskTitleInput").focus(); autoGrow($("taskTitleInput")); }, 30);
 }
@@ -1099,7 +1098,6 @@ document.addEventListener("dblclick", e => { const detail = e.target.closest("[d
 $("weatherChip").addEventListener("click", e => { if(e.target.id !== "datePicker") updateWeather(); });
 $("datePicker").addEventListener("change", e => { state.selectedDate = e.target.value || todayKey(); save(); render(); });
 $("saveTaskFromModal").onclick = saveTaskModal;
-$("deleteTaskFromModal").onclick = () => { if(editingTaskId) deleteTask(editingTaskId); };
 $("taskTitleInput").addEventListener("input", e => autoGrow(e.target));
 $("saveBrandSettings").onclick = saveBrand;
 $("ideaInput").addEventListener("input", updateIdea);
